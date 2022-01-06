@@ -9,4 +9,8 @@ module.exports = app => {
     .route('/appointments')
     .get(catchError(appointment.getAll))
     .post(catchError(appointment.createAppointment));
+
+  app
+  .route('/send-mail')
+  .post(catchError(appointment.sendEmail));
 };

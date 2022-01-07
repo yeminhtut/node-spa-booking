@@ -3,6 +3,22 @@ const Vonage = require("@vonage/server-sdk");
 const Appointment = require("../models/appointment");
 const nodemailer = require("nodemailer");
 const moment = require("moment");
+const handlebars = require('handlebars');
+var fs = require('fs');
+
+var readHTMLFile = function(path, callback) {
+    fs.readFile(path, {encoding: 'utf-8'}, function (err, html) {
+        if (err) {
+            console.log('first block', err)
+           callback(err); 
+           throw err;
+            
+        }
+        else {
+            callback(null, html);
+        }
+    });
+};
 
 exports.getAll = async (req, res) => {
     let { limit, skip } = req.query;
@@ -14,7 +30,7 @@ exports.getAll = async (req, res) => {
 };
 
 exports.sendEmail = async (req, res) => {
-    const { name, slot_date, slot_time, email } = req.body
+    const { name, slot_date, slot_time, email, treatment } = req.body
     let transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -39,15 +55,38 @@ exports.sendEmail = async (req, res) => {
     let mailOptions = {
         from: "aseemaidev@gmail.com",
         to: email,
-        subject: "Adeva Spa Booking Confirm",
+        subject: "Your ADEVA Spa session details",
         html: `Dear ${name},<br><br>Your appointment at Adeva Spa is confirmed.<br> Here is your appointment detail,<br> Email - ${email}<br> Date - ${moment(slot_date).format('Do, dddd, MMMM')}<br/> Time- ${slot_time}`,
     };
-    transporter.sendMail(mailOptions, function (err, data) {
-        if (err) {
-            console.log("Error " + err);
-        } else {
-            console.log("Email sent successfully", data);
-        }
+    // transporter.sendMail(mailOptions, function (err, data) {
+    //     if (err) {
+    //         console.log("Error " + err);
+    //     } else {
+    //         console.log("Email sent successfully", data);
+    //     }
+    // });
+    readHTMLFile(__dirname +'/adeva.html', function(err, html) {
+        //console.log('gee', html)
+        var template = handlebars.compile(html);
+        var replacements = {
+            treatment: treatment,
+            timeSlot: slot_time,
+            bookingTime: moment(slot_date).format('dddd D MMMM')
+        };
+        var htmlToSend = template(replacements);
+        var mailOptions = {
+            from: "aseemaidev@gmail.com",
+            to: email,
+            subject: "Your ADEVA Spa session details",
+            html : htmlToSend
+         };
+        //console.log('here', htmlToSend)
+         transporter.sendMail(mailOptions, function (error, response) {
+            if (error) {
+                console.log(error);
+                callback(error);
+            }
+        });
     });
     res.json({ success: true });
 };

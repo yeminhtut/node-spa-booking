@@ -8,7 +8,7 @@ let AppointmentSchema = new Schema({
   outlet: {
     type: String
   },
-  treatment: {
+  treatmentType: {
     type: String
   },
   nric: {
